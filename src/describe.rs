@@ -1,14 +1,11 @@
-use clap::{Subcommand, Args};
+use clap::Subcommand;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    Episode(Episode),
+    #[command(author, version, about, long_about = "Describe a Futurama episode (powered by Wikipedia)")]
+    Episode {
+        #[arg(long)]
+        name: String,
+    },
 }
 
-#[derive(Args, Debug)]
-#[command(author, version, about, long_about = "Describe a Futurama episode (powered by Wikipedia)")]
-pub struct Episode{
-    name: Option<String>,
-    #[arg(short, long, default_value_t=true)]
-    all: bool,
-}
