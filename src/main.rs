@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand, CommandFactory };
 
 mod describe;
 mod get;
+mod infosphere;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -30,6 +31,15 @@ enum Commands {
     },
 }
 
+fn handle_episodes(episode: &get::Episodes) {
+    if let Some(season) = episode.season {
+        infosphere::get_episodes(Some(season)).unwrap()
+    }
+    if episode.all {
+        infosphere::get_episodes(None).unwrap()
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>>{
     let cli = Cli::parse();
 
@@ -39,13 +49,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         }
         Commands::Get { command } => {
             match command {
-                get::Commands::Characters => {
-                    for character in get::CHARACTERS{
-                        println!("{}", character)
-                    }
+                get::Commands::Characters(_) => {
+                   get::Characters::print() 
                 }
-                get::Commands::Episodes(_) => {
-                    println!("Getting episodes")
+                get::Commands::Episodes(e) => {
+                    handle_episodes(e)
                 }
                 get::Commands::Quote(_) => {
                     println!("Getting quote...")

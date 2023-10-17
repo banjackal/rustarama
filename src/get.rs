@@ -5,19 +5,40 @@ pub enum Commands {
     #[command()]
     Episodes(Episodes),
     #[command()]
-    Characters,
+    Characters(Characters),
+    #[command()]
     Quote(Quote),
 }
 
+pub const CHARACTERS: &str = "
+    Fry
+    Leela
+    Bender
+    Prof. Farnsworth
+    Zoidberg
+    Hermes
+    Amy
+    Zapp Brannigan";
+
 #[derive(Args, Debug)]
+pub struct Characters{}
+
+impl Characters {
+    pub fn print(){
+        println!("{}", CHARACTERS)
+    }
+}
+
+#[derive(Args, Debug, Clone)]
 #[command(author, version, about, long_about = "Get list of episodes from series or season")]
 pub struct Episodes {
     name: Option<String>,
     #[arg(short, long, help="Season number (1-7)", value_name="int")]
-    season: Option<i32>,
+    pub season: Option<i32>,
     #[arg(short, long, help="Show episodes from all seasons")]
-    all: bool,
+    pub all: bool,
 }
+
 
 #[derive(Args, Debug)]
 #[command(author, version, about, long_about = "Get random Futurama quote")]
@@ -32,13 +53,3 @@ pub struct Quote {
     all: bool,
 }
 
-pub const CHARACTERS: [&'static str; 8] = [
-    "Fry",
-    "Leela",
-    "Bender",
-    "Prof. Farnsworth",
-    "Zoidberg",
-    "Hermes",
-    "Amy",
-    "Zapp Brannigan",
-];
