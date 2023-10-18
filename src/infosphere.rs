@@ -4,7 +4,6 @@ use curl::easy::Easy;
 
 const BASE_URL: &str = "https://theinfosphere.org/api.php";
 
-#[allow(dead_code)]
 pub fn get_episodes(from_season: Option<i32>) -> Result<(),Box<dyn std::error::Error>> {
     let data = get_episode_list_from_infosphere(); 
 

@@ -1,10 +1,21 @@
-use clap::Subcommand;
+use clap::{ Subcommand, Args};
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    #[command(author, version, about, long_about = "Describe a Futurama episode (powered by Infosphere)")]
-    Episode {
-        #[arg(long)]
-        name: String,
-    },
+    #[command()]
+    Episode(Episode),
+}
+
+#[derive(Args, Debug)]
+#[command(author, version, about, long_about = "Describe a Futurama episode (powered by Infosphere)")]
+pub struct Episode {
+    #[arg(long)]
+    name: String,
+}
+
+impl Episode {
+    pub fn describe_episode(&self) {
+        println!("Describe episode...{:?}", self.name);
+    }
+    
 }

@@ -62,7 +62,13 @@ pub struct Quote {
     episode: Option<String>,
     #[arg(short, long, help="Season number (1-7)", value_name="int")]
     season: Option<i32>,
-    #[arg(short, long, help="Show episodes from all seasons")]
+    #[arg(short, long, help="Toggle for returning all quotes from an episode")]
     all: bool,
+}
+
+impl Quote {
+    pub fn get_quote(&self) {
+        println!("getting quote...")
+    } 
 }
 
