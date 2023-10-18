@@ -31,14 +31,6 @@ enum Commands {
     },
 }
 
-fn handle_episodes(episode: &get::Episodes) {
-    if let Some(season) = episode.season {
-        infosphere::get_episodes(Some(season)).unwrap()
-    }
-    if episode.all {
-        infosphere::get_episodes(None).unwrap()
-    }
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>>{
     let cli = Cli::parse();
@@ -53,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                    get::Characters::print() 
                 }
                 get::Commands::Episodes(e) => {
-                    handle_episodes(e)
+                    e.get_episodes()
                 }
                 get::Commands::Quote(_) => {
                     println!("Getting quote...")

@@ -1,5 +1,8 @@
 use clap::{ Subcommand, Args};
 
+#[path = "./infosphere.rs"]
+mod infosphere;
+
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     #[command()]
@@ -34,11 +37,21 @@ impl Characters {
 pub struct Episodes {
     name: Option<String>,
     #[arg(short, long, help="Season number (1-7)", value_name="int")]
-    pub season: Option<i32>,
+    season: Option<i32>,
     #[arg(short, long, help="Show episodes from all seasons")]
-    pub all: bool,
+    all: bool,
 }
 
+impl Episodes {
+    pub fn get_episodes(&self) {
+        if let Some(season) = self.season {
+            infosphere::get_episodes(Some(season)).unwrap()
+        }
+        if self.all {
+            infosphere::get_episodes(None).unwrap()
+        }
+    }
+}
 
 #[derive(Args, Debug)]
 #[command(author, version, about, long_about = "Get random Futurama quote")]
