@@ -1,5 +1,8 @@
 use clap::{ Subcommand, Args};
 
+#[path = "./infosphere.rs"]
+mod infosphere;
+
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     #[command()]
@@ -15,7 +18,6 @@ pub struct Episode {
 
 impl Episode {
     pub fn describe_episode(&self) {
-        println!("Describe episode...{:?}", self.name);
+        infosphere::describe_episode(&self.name).unwrap()
     }
-    
 }

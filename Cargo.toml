@@ -9,5 +9,8 @@ edition = "2021"
 clap = { version = "4.4.6", features = ["derive"] }
 clap_complete_command = "0.5.1"
 curl = "0.4.44"
+html-escape = "0.2.13"
 json = "0.12.4"
 scraper = "0.17.1"
+snailquote = "0.3.1"
+urlencoding = "2.1.3"
