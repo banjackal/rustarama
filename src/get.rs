@@ -36,10 +36,8 @@ impl Characters {
 #[command(author, version, about, long_about = "Get list of episodes from series or season")]
 pub struct Episodes {
     name: Option<String>,
-    #[arg(short, long, help="Season number (1-7)", value_name="int")]
+    #[arg(short, long, value_parser(clap::value_parser!(i32).range(1..8)), help="Season number (1-8)", value_name="int")]
     season: Option<i32>,
-    #[arg(short, long, help="Show episodes from all seasons")]
-    all: bool,
 }
 
 impl Episodes {
@@ -47,9 +45,10 @@ impl Episodes {
         if let Some(season) = self.season {
             infosphere::get_episodes(Some(season)).unwrap()
         }
-        if self.all {
+        else {
             infosphere::get_episodes(None).unwrap()
         }
+        
     }
 }
 
@@ -57,18 +56,25 @@ impl Episodes {
 #[command(author, version, about, long_about = "Get random Futurama quote")]
 pub struct Quote {
     #[arg(short, long, help="Character name (e.g. 'Fry', 'Bender'")]
-    character: Option<String>,
+    pub character: Option<String>,
     #[arg(short, long, help="Episode name (use 'futurama get episodes' command for assistance)")]
-    episode: Option<String>,
-    #[arg(short, long, help="Season number (1-7)", value_name="int")]
-    season: Option<i32>,
-    #[arg(short, long, help="Toggle for returning all quotes from an episode")]
+    pub episode: Option<String>,
+    #[arg(short, conflicts_with("episode"), long, value_parser(clap::value_parser!(i32).range(1..8)),help="Season number (1-8)", value_name="int")]
+    pub season: Option<i32>,
+    #[arg(requires("episode"),conflicts_with("character"), conflicts_with("season"),short, long, help="Toggle for returning all quotes from an episode")]
     all: bool,
 }
 
 impl Quote {
     pub fn get_quote(&self) {
-        println!("getting quote...")
+        if self.all {
+            if let Some(episode) = &self.episode {
+                infosphere::get_all_quotes_from_episode(&episode).unwrap();
+            }
+        }
+        else {
+            infosphere::get_quote(&self).unwrap();
+        }
     } 
 }
 
