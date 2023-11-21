@@ -1,3 +1,4 @@
+
 use scraper::{Html, Selector, ElementRef};
 use urlencoding::encode;
 use curl::easy::Easy;
@@ -128,7 +129,7 @@ pub fn print_all_quotes_from_episode(episode: &str) -> Result<(), Box<dyn std::e
     
 }
 
-fn get_all_quotes_from_episode(episode: &str) -> Result<Vec<String>,Box<dyn std::error::Error>> {
+fn get_all_quotes_from_episode(episode: &str) -> Result<Vec<String>,clap::Error> {
     let mut episode_path = get_encoded_title(episode);
 
     let movies = get_episode_list_by_season(&5);
@@ -151,7 +152,12 @@ fn get_all_quotes_from_episode(episode: &str) -> Result<Vec<String>,Box<dyn std:
         Some(h) => h,
         None => {
             let new_selector = Selector::parse(r#"div > h2 > #Quotes "#).unwrap();
-            document.select(&new_selector).next().unwrap()
+            match document.select(&new_selector).next() {
+                Some(i) => i,
+                None => {
+                    return Err(clap::Error::new(clap::error::ErrorKind::InvalidValue));
+                }
+            }
         }
     };
 
@@ -189,43 +195,103 @@ fn get_all_quotes_from_episode(episode: &str) -> Result<Vec<String>,Box<dyn std:
 }
 
 pub fn get_quote(params: &Quote) -> Result<(),Box<dyn std::error::Error>> {
-    if params.character == None && params.episode == None && params.season == None {
-        println!("No input specified, getting random quote");
+    let mut available_seasons = vec![1, 2, 3, 4, 5, 6, 7, 8];
+    let season = match params.season {
+        Some(s) => {
+            available_seasons = vec![];
+            s
+        },
+        None => {
+            let index = rand::thread_rng().gen_range(0..available_seasons.len());
+            available_seasons.remove(index)
+        }
+    };
 
-        let random_season = rand::thread_rng().gen_range(1..8);
-        let random_episode = get_random_episode_from_season(&random_season);
-        let quote = get_single_quote(&random_episode);
-        println!("{}", quote);
+    let mut available_episodes = vec![];
+    let mut episode = match &params.episode {
+        Some(e) => {
+            e.to_owned()
+        },
+        None => {
+            available_episodes = get_episode_list_by_season(&season);
+            let episode = get_random_episode_from_season(&season);
+            let index = available_episodes.iter().position(|e| e == &episode).unwrap();
+
+            available_episodes.remove(index)
+        },
+    };
+
+    let quote = match get_single_quote(&episode, &params.character) {
+        Ok(q) => q.to_owned(),
+        Err(_) => {
+            let mut quote = String::from("");
+            while available_episodes.len() > 0 || available_seasons.len() > 0 {
+                let index = rand::thread_rng().gen_range(0..available_episodes.len());
+                episode = available_episodes.remove(index);
+
+                match get_single_quote(&episode, &params.character) {
+                    Ok(r) => {
+                        quote = r.to_owned();
+                        break;
+                    },
+                    Err(_) => {
+                        if available_episodes.len() == 0 && available_seasons.len() > 0 {
+                            let index = rand::thread_rng().gen_range(0..available_seasons.len());
+                            let season = available_seasons.remove(index);
+
+                            available_episodes = get_episode_list_by_season(&season);
+
+                        }
+                        continue;
+                    }
+                }
+            }
+            quote.to_owned()
+        }
+
+    };
+    if quote == "" {
+        println!("No quotes found from provided input");
     }
-    if let Some(season) = params.season {
-        let random_episode = get_random_episode_from_season(&season);
-        println!("{}", get_single_quote(&random_episode));
-    }
-    if let Some(episode) = &params.episode {
-        println!("{}", get_single_quote(episode));
-    }
+    println!("Episode: {}\n", episode);
+    println!("{}", quote);
+    
     Ok(())
 }
 
 fn get_random_episode_from_season(season: &i32) -> String {
     let episodes = get_episode_list_by_season(season);
 
-    let index = rand::thread_rng().gen_range(0..episodes.len()-1);
+    let index = rand::thread_rng().gen_range(0..episodes.len());
 
     let episode = &episodes[index];
     episode.to_owned()
 }
 
-fn get_single_quote(episode: &str) -> String {
-    println!("Getting single quote from {} \n", episode);
+fn get_single_quote(episode: &str, character: &Option<String>) -> Result<String, String> {
+    let mut quotes = get_all_quotes_from_episode(episode).unwrap();
+    if quotes.len() == 0 {
+        return Err("No quotes in this episode".to_owned());
+    }
 
-    let quotes = get_all_quotes_from_episode(episode).unwrap();
+    if let Some(c) = character {
+        let speaker = format!("{}: ", c);
+        quotes = quotes
+            .iter()
+            .filter(|&element| element.contains(&speaker))
+            .cloned()
+            .collect();
+    }
 
-    let index = rand::thread_rng().gen_range(0..quotes.len()-1);
+    if quotes.len() == 0 {
+        return Err("No quotes in this episode spoken by the provided character".to_owned());
+    }
+
+    let index = rand::thread_rng().gen_range(0..quotes.len());
 
     let quote = &quotes[index];
 
-    quote.to_owned()
+    Ok(quote.to_owned())
    
 }
 

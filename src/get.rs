@@ -36,7 +36,7 @@ impl Characters {
 #[command(author, version, about, long_about = "Get list of episodes from series or season")]
 pub struct Episodes {
     name: Option<String>,
-    #[arg(short, long, value_parser(clap::value_parser!(i32).range(1..8)), help="Season number (1-8)", value_name="int")]
+    #[arg(short, long, value_parser(clap::value_parser!(i32).range(1..9)), help="Season number (1-8)", value_name="int")]
     season: Option<i32>,
 }
 
@@ -59,7 +59,7 @@ pub struct Quote {
     pub character: Option<String>,
     #[arg(short, long, help="Episode name (use 'futurama get episodes' command for assistance)")]
     pub episode: Option<String>,
-    #[arg(short, conflicts_with("episode"), long, value_parser(clap::value_parser!(i32).range(1..8)),help="Season number (1-8)", value_name="int")]
+    #[arg(short, conflicts_with("episode"), long, value_parser(clap::value_parser!(i32).range(1..9)),help="Season number (1-8)", value_name="int")]
     pub season: Option<i32>,
     #[arg(requires("episode"),conflicts_with("character"), conflicts_with("season"),short, long, help="Toggle for returning all quotes from an episode")]
     all: bool,
