@@ -69,7 +69,7 @@ impl Quote {
     pub fn get_quote(&self) {
         if self.all {
             if let Some(episode) = &self.episode {
-                infosphere::get_all_quotes_from_episode(&episode).unwrap();
+                infosphere::print_all_quotes_from_episode(&episode).unwrap();
             }
         }
         else {

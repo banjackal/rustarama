@@ -119,7 +119,16 @@ pub fn describe_episode(episode_name: &str) -> Result<(), Box<dyn std::error::Er
     Ok(())
 }
 
-pub fn get_all_quotes_from_episode(episode: &str) -> Result<(),Box<dyn std::error::Error>> {
+pub fn print_all_quotes_from_episode(episode: &str) -> Result<(), Box<dyn std::error::Error>>{
+    let quotes = get_all_quotes_from_episode(episode).unwrap();
+
+    println!("{}", quotes.join("\n\n"));
+
+    Ok(())
+    
+}
+
+fn get_all_quotes_from_episode(episode: &str) -> Result<Vec<String>,Box<dyn std::error::Error>> {
     let mut episode_path = get_encoded_title(episode);
 
     let movies = get_episode_list_by_season(&5);
@@ -147,6 +156,8 @@ pub fn get_all_quotes_from_episode(episode: &str) -> Result<(),Box<dyn std::erro
     };
 
     let parent = quote_headline.parent().unwrap();
+
+    let mut quotes = Vec::new();
     for sibling in parent.next_siblings() {
         let element = match ElementRef::wrap(sibling){
             None => {continue;},
@@ -159,14 +170,22 @@ pub fn get_all_quotes_from_episode(episode: &str) -> Result<(),Box<dyn std::erro
             for quote in element.select(&quote_selector) {
                 let p = quote.inner_html(); 
                 let p = clean_html(&p);
-                println!("{}\n\n", p);
+                quotes.push(p);
             }
         } 
+        else if element.value().name() == "ul" {
+            let quote_selector = Selector::parse(r#" div > p "#).unwrap();
+            for quote in element.select(&quote_selector) {
+                let p = quote.inner_html(); 
+                let p = clean_html(&p);
+                quotes.push(p);
+            }
+        }
         else {
             break;
         }
     }
-    Ok(())
+    Ok(quotes)
 }
 
 pub fn get_quote(params: &Quote) -> Result<(),Box<dyn std::error::Error>> {
@@ -179,10 +198,11 @@ pub fn get_quote(params: &Quote) -> Result<(),Box<dyn std::error::Error>> {
         println!("{}", quote);
     }
     if let Some(season) = params.season {
-        println!("getting quote from season {}", season);
+        let random_episode = get_random_episode_from_season(&season);
+        println!("{}", get_single_quote(&random_episode));
     }
     if let Some(episode) = &params.episode {
-        println!("getting quote from episode {}", episode);
+        println!("{}", get_single_quote(episode));
     }
     Ok(())
 }
@@ -197,7 +217,16 @@ fn get_random_episode_from_season(season: &i32) -> String {
 }
 
 fn get_single_quote(episode: &str) -> String {
-    format!("Getting single quote from {}", episode)
+    println!("Getting single quote from {} \n", episode);
+
+    let quotes = get_all_quotes_from_episode(episode).unwrap();
+
+    let index = rand::thread_rng().gen_range(0..quotes.len()-1);
+
+    let quote = &quotes[index];
+
+    quote.to_owned()
+   
 }
 
 fn get_episode_list_html_from_infosphere() -> Html {
