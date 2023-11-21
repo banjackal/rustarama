@@ -224,15 +224,23 @@ pub fn get_quote(params: &Quote) -> Result<(),Box<dyn std::error::Error>> {
     let quote = match get_single_quote(&episode, &params.character) {
         Ok(q) => q.to_owned(),
         Err(_) => {
+            if available_episodes.len() == 0 {
+                println!("No quotes found from provided input");
+                return Ok(());
+            }
             let mut quote = String::from("");
+            // println!("available seasons {:?} \n available_episodes {:?}", available_seasons, available_episodes);
             while available_episodes.len() > 0 || available_seasons.len() > 0 {
                 let index = rand::thread_rng().gen_range(0..available_episodes.len());
                 episode = available_episodes.remove(index);
 
                 match get_single_quote(&episode, &params.character) {
                     Ok(r) => {
+                        if r.len() > 0 {
                         quote = r.to_owned();
                         break;
+                        }
+                        else {continue;}
                     },
                     Err(_) => {
                         if available_episodes.len() == 0 && available_seasons.len() > 0 {
@@ -252,6 +260,7 @@ pub fn get_quote(params: &Quote) -> Result<(),Box<dyn std::error::Error>> {
     };
     if quote == "" {
         println!("No quotes found from provided input");
+        return Ok(());
     }
     println!("Episode: {}\n", episode);
     println!("{}", quote);
@@ -269,7 +278,10 @@ fn get_random_episode_from_season(season: &i32) -> String {
 }
 
 fn get_single_quote(episode: &str, character: &Option<String>) -> Result<String, String> {
-    let mut quotes = get_all_quotes_from_episode(episode).unwrap();
+    let mut quotes = match get_all_quotes_from_episode(episode) {
+        Ok(q) => q,
+        Err(_) => vec![]
+    };
     if quotes.len() == 0 {
         return Err("No quotes in this episode".to_owned());
     }
