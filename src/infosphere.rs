@@ -3,18 +3,26 @@ use urlencoding::encode;
 use curl::easy::Easy;
 use rand::Rng;
 
-use crate::get::Quote;
+use crate::get::{Quote, self};
 
 const BASE_URL: &str = "https://theinfosphere.org";
 
-//TODO reuse getting the list of episodes for reuse in quote
 pub fn get_episodes(from_season: Option<i32>) -> Result<(),Box<dyn std::error::Error>> {
+    let episodes = get_episode_list(from_season).unwrap();
+
+    println!("{}", episodes.join("\n"));
+
+    Ok(())
+}
+
+fn get_episode_list(from_season: Option<i32>) -> Result<Vec<std::string::String>, Box<dyn std::error::Error>>{
     let document = get_episode_list_html_from_infosphere();
 
     let all_seasons_table_selector = r#"body > div > table.overview"#;
     let selector = Selector::parse(all_seasons_table_selector).unwrap();
     let season = Selector::parse(r#"body > div > h2 > .mw-headline"#).unwrap();
     let mut season_iterator = document.select(&season);
+    let mut result = Vec::new();
     for table in document.select(&selector).skip(1){
         let episode_selector = Selector::parse(r#"tbody > tr > td > b > a"#).unwrap();
         let mut episode_iterator = table.select(&episode_selector).peekable();
@@ -25,42 +33,34 @@ pub fn get_episodes(from_season: Option<i32>) -> Result<(),Box<dyn std::error::E
                     continue
                 }
             }
-            println!("\n#### {} ####", season.inner_html());
+            result.push(format!("\n#### {} ####", season.inner_html()));
         }
 
-        //TODO - only list movies once
         for element in episode_iterator{
-            println!("{}", element.inner_html())
-        }
-    }
-    Ok(())
-}
+            let mut title = element.inner_html().to_string();
+            let part = " Part ";
+            if title.contains(part) {
+                let start_index = title.find(part).unwrap();
+                title.replace_range(start_index.., "");
 
-//TODO - remove some duplication
-fn get_episode_list_by_season(season: &i32) -> Vec<std::string::String> {
-    let document = get_episode_list_html_from_infosphere();
-
-    let all_seasons_table_selector = r#"body > div > table.overview"#;
-    let selector = Selector::parse(all_seasons_table_selector).unwrap();
-    let season_selector = Selector::parse(r#"body > div > h2 > .mw-headline"#).unwrap();
-    let mut season_iterator = document.select(&season_selector);
-
-    let mut result = Vec::new();
-    for table in document.select(&selector).skip(1){
-        let episode_selector = Selector::parse(r#"tbody > tr > td > b > a"#).unwrap();
-        let mut episode_iterator = table.select(&episode_selector).peekable();
-        if episode_iterator.peek().is_some() {
-            let season_html = season_iterator.next().unwrap();
-            if season_html.inner_html() != format!("Season {}", season) {
-                continue
+                if !result.contains(&title) {
+                    result.push(title);
+                }
+                continue;
             }
-        }
 
-        for element in episode_iterator{
             result.push(element.inner_html());
         }
     }
-    result
+
+    Ok(result.to_owned())
+
+}
+
+fn get_episode_list_by_season(season: &i32) -> Vec<std::string::String> {
+    let list = get_episode_list(Some(*season)).unwrap();
+    let result = &list[2..];
+    result.to_vec()
 
 }
 
@@ -120,14 +120,32 @@ pub fn describe_episode(episode_name: &str) -> Result<(), Box<dyn std::error::Er
 }
 
 pub fn get_all_quotes_from_episode(episode: &str) -> Result<(),Box<dyn std::error::Error>> {
-    let episode_path = get_encoded_title(episode);
+    let mut episode_path = get_encoded_title(episode);
+
+    let movies = get_episode_list_by_season(&5);
+
+    if movies.contains(&String::from(episode)) {
+        let mut prefix = String::from("Miscellany_of_");
+
+        prefix.push_str(&episode_path);
+
+        episode_path = prefix;
+
+    }
 
     let document = get_episode_html_from_infosphere(&episode_path);
     // dumps the page html for testing
     // println!("{}", document.html());
     //
-    let selector = Selector::parse(r#"div > h3 > #Quotes "#).unwrap();
-    let quote_headline = document.select(&selector).next().unwrap();
+    let selector = Selector::parse(r#"div > h3 > #Quotes "#).unwrap(); 
+    let quote_headline = match document.select(&selector).next() {
+        Some(h) => h,
+        None => {
+            let new_selector = Selector::parse(r#"div > h2 > #Quotes "#).unwrap();
+            document.select(&new_selector).next().unwrap()
+        }
+    };
+
     let parent = quote_headline.parent().unwrap();
     for sibling in parent.next_siblings() {
         let element = match ElementRef::wrap(sibling){
